@@ -36,10 +36,10 @@ jobs:
         uv sync --frozen
     
     # --- 阶段 A: 代码风格检查 (Linting) ---
-   - name: 4. 运行代码风格检查
-      # 使用 uv run 自动在虚拟环境中执行
-      run: uv run flake8 . --exit-zero --max-line-length=120
+   
 
     # --- 阶段 B: 运行单元测试 ---
-   - name: 5. 运行单元测试
-      run: uv run pytest
+    - name: 5. 运行单元测试 (Run Pytest Tests)
+      # 运行项目中的所有 pytest 测试文件
+      run: pytest
+      # 注意：这里需要您在项目中创建 tests/ 目录并编写测试文件。

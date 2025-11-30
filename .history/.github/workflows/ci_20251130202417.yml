@@ -41,5 +41,4 @@ jobs:
       run: uv run flake8 . --exit-zero --max-line-length=120
 
     # --- 阶段 B: 运行单元测试 ---
-   - name: 5. 运行单元测试
-      run: uv run pytest
+   
