@@ -31,7 +31,7 @@ jobs:
     # --- 阶段 A: 代码风格检查 (Linting) ---
     - name: 4. 运行代码风格检查 (Run Flake8 Lint)
       # 检查整个项目，--max-line-length=120 为推荐的行长
-      run: flake8 . --exit-per-file --max-line-length=120
+      run: flake8 . --exit-per-zero  --max-line-length=120
       # 注意：如果 Flake8 报错，CI 会失败，强制您修复代码风格。
 
     # --- 阶段 B: 运行单元测试 ---
