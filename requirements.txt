@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+flake8
+pytest
+langchain
+chromadb
+openai
+sentence-transformers
