@@ -1,0 +1,41 @@
+name: Continuous Integration Checks
+
+# 触发条件：当代码推送到 develop/main 或有 PR 提交到 develop/main 时
+on:
+  push:
+    branches: [ develop, main ]
+  pull_request:
+    branches: [ develop, main ]
+  workflow_dispatch: # 允许手动从 GitHub 界面触发
+
+jobs:
+  build-and-test:
+    # 运行 CI 的操作系统环境
+    runs-on: ubuntu-latest
+    
+    # 使用 Python 3.10
+    steps:
+    - name: 1. 检出代码 (Checkout Repository)
+      uses: actions/checkout@v4
+
+    - name: 2. 设置 Python 环境 (Setup Python)
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+        cache: 'pip' # 缓存依赖，加速后续运行
+
+    - name: 3. 安装依赖 (Install Dependencies)
+      # 确保您的 requirements.txt 包含 flake8 和 pytest
+      run: pip install -r requirements.txt
+    
+    # --- 阶段 A: 代码风格检查 (Linting) ---
+    - name: 4. 运行代码风格检查 (Run Flake8 Lint)
+      # 检查整个项目，--max-line-length=120 为推荐的行长
+      run: flake8 . --exit-per-file --max-line-length=120
+      # 注意：如果 Flake8 报错，CI 会失败，强制您修复代码风格。
+
+    # --- 阶段 B: 运行单元测试 ---
+    - name: 5. 运行单元测试 (Run Pytest Tests)
+      # 运行项目中的所有 pytest 测试文件
+      run: pytest
+      # 注意：这里需要您在项目中创建 tests/ 目录并编写测试文件。
