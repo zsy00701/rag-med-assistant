@@ -4,8 +4,18 @@ from langchain_community.vectorstores import Chroma
 from langchain_openai import OpenAIEmbeddings
 from langchain_core.documents import Document
 
+    # ================= 配置 =================
 SOURCE_FILE = "QA_V0.md"       # 您上传的文件名
+
+# Chroma Cloud 配置（优先使用）
+CHROMA_API_KEY = os.getenv("CHROMA_API_KEY")
+CHROMA_TENANT = os.getenv("CHROMA_TENANT", "default_tenant")
+CHROMA_DATABASE = os.getenv("CHROMA_DATABASE", "default_database")
+CHROMA_COLLECTION = os.getenv("CHROMA_COLLECTION", "medical_qa")
+
+# 本地数据库配置（回退选项）
 DB_PATH = "./chroma_db_medical" # 向量数据库存储路径
+# =======================================
 
 
 def parse_qa_file(file_path):
@@ -74,14 +84,48 @@ def ingest_data():
 
     embedding_model = OpenAIEmbeddings()
     
-    # 创建并持久化数据库
-    vectorstore = Chroma.from_documents(
-        documents=documents,
-        embedding=embedding_model,
-        persist_directory=DB_PATH
-    )
-    
-    print(f"🎉 入库成功！数据已保存到 {DB_PATH}")
+    # 创建并持久化数据库（优先使用 Chroma Cloud，否则使用本地）
+    if CHROMA_API_KEY:
+        # 使用 Chroma Cloud
+        try:
+            import chromadb
+            print("☁️  使用 Chroma Cloud 存储...")
+            chroma_client = chromadb.HttpClient(
+                host="api.trychroma.com",
+                port=443,
+                ssl=True,
+                headers={
+                    "X-Chroma-Token": CHROMA_API_KEY,
+                    "X-Chroma-Tenant": CHROMA_TENANT,
+                    "X-Chroma-Database": CHROMA_DATABASE,
+                }
+            )
+            vectorstore = Chroma.from_documents(
+                documents=documents,
+                embedding=embedding_model,
+                client=chroma_client,
+                collection_name=CHROMA_COLLECTION
+            )
+            print(f"🎉 入库成功！数据已保存到 Chroma Cloud: {CHROMA_DATABASE}/{CHROMA_COLLECTION}")
+        except Exception as e:
+            print(f"⚠️  Chroma Cloud 连接失败: {e}")
+            print("🔄 回退到本地数据库...")
+            # 回退到本地
+            vectorstore = Chroma.from_documents(
+                documents=documents,
+                embedding=embedding_model,
+                persist_directory=DB_PATH
+            )
+            print(f"🎉 入库成功！数据已保存到本地: {DB_PATH}")
+    else:
+        # 使用本地数据库
+        print("💾 使用本地数据库存储...")
+        vectorstore = Chroma.from_documents(
+            documents=documents,
+            embedding=embedding_model,
+            persist_directory=DB_PATH
+        )
+        print(f"🎉 入库成功！数据已保存到本地: {DB_PATH}")
 
 if __name__ == "__main__":
     ingest_data()

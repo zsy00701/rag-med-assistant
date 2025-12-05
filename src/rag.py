@@ -7,17 +7,54 @@ from langchain_core.runnables import RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
 
 # ================= 配置 =================
+# Chroma Cloud 配置（优先使用）
+CHROMA_API_KEY = os.getenv("CHROMA_API_KEY")
+CHROMA_TENANT = os.getenv("CHROMA_TENANT", "default_tenant")
+CHROMA_DATABASE = os.getenv("CHROMA_DATABASE", "default_database")
+CHROMA_COLLECTION = os.getenv("CHROMA_COLLECTION", "medical_qa")
+
+# 本地数据库配置（回退选项）
 DB_PATH = "./chroma_db_medical"
 # =======================================
 
 def get_rag_chain():
-    # 1. 检查数据库是否存在
-    if not os.path.exists(DB_PATH):
-        raise FileNotFoundError("❌ 向量数据库未找到，请先运行 src/ingest_md.py")
-
-    # 2. 加载数据库
     embedding_model = OpenAIEmbeddings()
-    vectorstore = Chroma(persist_directory=DB_PATH, embedding_function=embedding_model)
+    
+    # 2. 加载数据库（优先使用 Chroma Cloud，否则使用本地）
+    if CHROMA_API_KEY:
+        # 使用 Chroma Cloud
+        try:
+            import chromadb
+            print("☁️  使用 Chroma Cloud 连接...")
+            chroma_client = chromadb.HttpClient(
+                host="api.trychroma.com",
+                port=443,
+                ssl=True,
+                headers={
+                    "X-Chroma-Token": CHROMA_API_KEY,
+                    "X-Chroma-Tenant": CHROMA_TENANT,
+                    "X-Chroma-Database": CHROMA_DATABASE,
+                }
+            )
+            vectorstore = Chroma(
+                client=chroma_client,
+                collection_name=CHROMA_COLLECTION,
+                embedding_function=embedding_model
+            )
+            print(f"✅ 已连接到 Chroma Cloud: {CHROMA_DATABASE}/{CHROMA_COLLECTION}")
+        except Exception as e:
+            print(f"⚠️  Chroma Cloud 连接失败: {e}")
+            print("🔄 回退到本地数据库...")
+            # 回退到本地
+            if not os.path.exists(DB_PATH):
+                raise FileNotFoundError("❌ 向量数据库未找到，请先运行 src/ingest.py")
+            vectorstore = Chroma(persist_directory=DB_PATH, embedding_function=embedding_model)
+    else:
+        # 使用本地数据库
+        print("💾 使用本地数据库...")
+        if not os.path.exists(DB_PATH):
+            raise FileNotFoundError("❌ 向量数据库未找到，请先运行 src/ingest.py")
+        vectorstore = Chroma(persist_directory=DB_PATH, embedding_function=embedding_model)
     
     # 3. 创建检索器
     # k=3: 每次找 3 条最相关的 QA 给大模型参考
