@@ -1,8 +1,12 @@
 import os
 import re
+from dotenv import load_dotenv
 from langchain_community.vectorstores import Chroma
 from langchain_openai import OpenAIEmbeddings
 from langchain_core.documents import Document
+
+# 加载 .env 文件
+load_dotenv()
 
     # ================= 配置 =================
 SOURCE_FILE = "QA_V0.md"       # 您上传的文件名
@@ -90,15 +94,10 @@ def ingest_data():
         try:
             import chromadb
             print("☁️  使用 Chroma Cloud 存储...")
-            chroma_client = chromadb.HttpClient(
-                host="api.trychroma.com",
-                port=443,
-                ssl=True,
-                headers={
-                    "X-Chroma-Token": CHROMA_API_KEY,
-                    "X-Chroma-Tenant": CHROMA_TENANT,
-                    "X-Chroma-Database": CHROMA_DATABASE,
-                }
+            chroma_client = chromadb.CloudClient(
+                api_key=CHROMA_API_KEY,
+                tenant=CHROMA_TENANT,
+                database=CHROMA_DATABASE
             )
             vectorstore = Chroma.from_documents(
                 documents=documents,

@@ -1,8 +1,13 @@
 import os
 import uvicorn
+from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from src.rag import get_rag_chain
+
+# 加载 .env 文件
+load_dotenv()
 
 # ================= 数据模型 =================
 class QueryRequest(BaseModel):
@@ -17,6 +22,15 @@ app = FastAPI(
     title="肝胆胰康复助手 API",
     description="基于 RAG 的智能问答服务",
     version="1.0"
+)
+
+# 添加 CORS 中间件
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # 生产环境建议指定具体域名
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # 全局变量

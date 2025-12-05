@@ -1,10 +1,14 @@
 import os
 import time
+from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain_community.vectorstores import Chroma
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
+
+# 加载 .env 文件
+load_dotenv()
 
 # ================= 配置 =================
 # Chroma Cloud 配置（优先使用）
@@ -26,15 +30,10 @@ def get_rag_chain():
         try:
             import chromadb
             print("☁️  使用 Chroma Cloud 连接...")
-            chroma_client = chromadb.HttpClient(
-                host="api.trychroma.com",
-                port=443,
-                ssl=True,
-                headers={
-                    "X-Chroma-Token": CHROMA_API_KEY,
-                    "X-Chroma-Tenant": CHROMA_TENANT,
-                    "X-Chroma-Database": CHROMA_DATABASE,
-                }
+            chroma_client = chromadb.CloudClient(
+                api_key=CHROMA_API_KEY,
+                tenant=CHROMA_TENANT,
+                database=CHROMA_DATABASE
             )
             vectorstore = Chroma(
                 client=chroma_client,
